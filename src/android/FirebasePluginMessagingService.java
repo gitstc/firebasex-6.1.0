@@ -24,6 +24,7 @@ import com.google.firebase.messaging.RemoteMessage;
 import java.util.Map;
 import java.util.Random;
 
+//Firas
 import me.leolin.shortcutbadger.ShortcutBadger;
 
 public class FirebasePluginMessagingService extends FirebaseMessagingService {
@@ -82,6 +83,10 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                 return;
             }
 
+            if(FirebasePlugin.applicationContext == null){
+                FirebasePlugin.applicationContext = this.getApplicationContext();
+            }
+
             // TODO(developer): Handle FCM messages here.
             // Not getting messages here? See why this may be: https://goo.gl/39bRNJ
             String messageType;
@@ -96,8 +101,8 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             String channelId = null;
             String visibility = null;
             String priority = null;
-            int badge = -1;
             boolean foregroundNotification = false;
+            int badge = -1; //Firas
 
             Map<String, String> data = remoteMessage.getData();
 
@@ -118,7 +123,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             }else{
                 Log.i(TAG, "Received message: data");
                 messageType = "data";
-                Log.i(TAG, data.toString());
+                Log.i(TAG, data.toString()); //Firas
             }
 
             if (data != null) {
@@ -137,7 +142,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                 if(data.containsKey("notification_android_icon")) icon = data.get("notification_android_icon");
                 if(data.containsKey("notification_android_visibility")) visibility = data.get("notification_android_visibility");
                 if(data.containsKey("notification_android_priority")) priority = data.get("notification_android_priority");
-                if(data.containsKey("badge")) badge = Integer.parseInt(data.get("badge"));
+                if(data.containsKey("badge")) badge = Integer.parseInt(data.get("badge")); //Firas
             }
 
             if (TextUtils.isEmpty(id)) {
@@ -158,19 +163,19 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             Log.d(TAG, "Channel Id: " + channelId);
             Log.d(TAG, "Visibility: " + visibility);
             Log.d(TAG, "Priority: " + priority);
-            Log.d(TAG, "Badge: " + badge);
+            Log.d(TAG, "Badge: " + badge); //Firas
 
 
             if (!TextUtils.isEmpty(body) || !TextUtils.isEmpty(title) || (data != null && !data.isEmpty())) {
                 boolean showNotification = (FirebasePlugin.inBackground() || !FirebasePlugin.hasNotificationsCallback() || foregroundNotification) && (!TextUtils.isEmpty(body) || !TextUtils.isEmpty(title));
-                sendMessage(remoteMessage, data, messageType, id, title, body, showNotification, sound, vibrate, light, color, icon, channelId, priority, visibility, badge);
+                sendMessage(remoteMessage, data, messageType, id, title, body, showNotification, sound, vibrate, light, color, icon, channelId, priority, visibility, badge); //Firas - added badge
             }
         }catch (Exception e){
             FirebasePlugin.handleExceptionWithoutContext(e);
         }
     }
 
-    private void sendMessage(RemoteMessage remoteMessage, Map<String, String> data, String messageType, String id, String title, String body, boolean showNotification, String sound, String vibrate, String light, String color, String icon, String channelId, String priority, String visibility, int badge) {
+    private void sendMessage(RemoteMessage remoteMessage, Map<String, String> data, String messageType, String id, String title, String body, boolean showNotification, String sound, String vibrate, String light, String color, String icon, String channelId, String priority, String visibility, int badge) { //Firas - added badge
         Log.d(TAG, "sendMessage(): messageType="+messageType+"; showNotification="+showNotification+"; id="+id+"; title="+title+"; body="+body+"; sound="+sound+"; vibrate="+vibrate+"; light="+light+"; color="+color+"; icon="+icon+"; channel="+channelId+"; data="+data.toString());
         Bundle bundle = new Bundle();
         for (String key : data.keySet()) {
@@ -200,7 +205,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             PendingIntent pendingIntent = PendingIntent.getBroadcast(this, id.hashCode(), intent, PendingIntent.FLAG_UPDATE_CURRENT);
 
             // Channel
-            if(channelId == null || FirebasePlugin.channelExists(channelId)){
+            if(channelId == null || !FirebasePlugin.channelExists(channelId)){
                 channelId = FirebasePlugin.defaultChannelId;
             }
             if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
@@ -289,17 +294,16 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                 }
 
                 int largeIconResID;
-                if (customLargeIconResID != 0) {
-                    largeIconResID = customLargeIconResID;
-                    Log.d(TAG, "Large icon: custom="+icon);
-                }else if (defaultLargeIconResID != 0) {
-                    Log.d(TAG, "Large icon: default="+defaultLargeIconName);
-                    largeIconResID = defaultLargeIconResID;
-                } else {
-                    Log.d(TAG, "Large icon: application");
-                    largeIconResID = getApplicationInfo().icon;
+                if (customLargeIconResID != 0 || defaultLargeIconResID != 0) {
+					if (customLargeIconResID != 0) {
+	                    largeIconResID = customLargeIconResID;
+	                    Log.d(TAG, "Large icon: custom="+icon);
+	                }else{
+	                    Log.d(TAG, "Large icon: default="+defaultLargeIconName);
+	                    largeIconResID = defaultLargeIconResID;
+	                }
+	                notificationBuilder.setLargeIcon(BitmapFactory.decodeResource(getApplicationContext().getResources(), largeIconResID));
                 }
-                notificationBuilder.setLargeIcon(BitmapFactory.decodeResource(getApplicationContext().getResources(), largeIconResID));
             }
 
             // Color
@@ -340,10 +344,11 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             notificationManager.notify(id.hashCode(), notification);
         }
 
-        //Badge
+        //Firas
         if(badge != -1) {
             ShortcutBadger.applyCount(this.getApplicationContext(), badge);
         }
+
         // Send to plugin
         FirebasePlugin.sendMessage(bundle, this.getApplicationContext());
     }
